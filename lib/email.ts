@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 
 const resendApiKey = process.env.RESEND_API_KEY;
-const adminEmail = process.env.ADMIN_EMAIL || process.env.NOTIFICATION_EMAIL || "operaciones@dasai.cl";
+const adminEmail = process.env.ADMIN_EMAIL || process.env.NOTIFICATION_EMAIL || "contacto@dasai.cl";
 const fromEmail = process.env.EMAIL_FROM || "Dasai Logística <onboarding@resend.dev>";
 
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
