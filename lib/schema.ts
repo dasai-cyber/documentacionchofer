@@ -17,6 +17,15 @@ export const FileAttachmentSchema = z.object({
 
 export type FileAttachment = z.infer<typeof FileAttachmentSchema>;
 
+const RequiredFileSchema = (errorMessage: string) =>
+  FileAttachmentSchema.nullable()
+    .optional()
+    .refine((file) => Boolean(file && file.dataUrl), {
+      message: errorMessage,
+    });
+
+const OptionalFileSchema = () => FileAttachmentSchema.nullable().optional();
+
 // Paso 1: Datos Personales
 export const Step1PersonalSchema = z.object({
   nombreCompleto: z
@@ -69,54 +78,21 @@ export const Step2BancosSchema = z.object({
 
 // Paso 3: Documentos Conductor
 export const Step3DocsConductorSchema = z.object({
-  certHojaVida: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "El certificado de hoja de vida del conductor es obligatorio"
-  ),
-  licenciaAnverso: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "La licencia de conducir (anverso) es obligatoria"
-  ),
-  licenciaReverso: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "La licencia de conducir (reverso) es obligatoria"
-  ),
-  carnetAnverso: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "La cédula de identidad (anverso) es obligatoria"
-  ),
-  carnetReverso: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "La cédula de identidad (reverso) es obligatoria"
-  ),
-  certAntecedentes: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "El certificado de antecedentes es obligatorio"
-  ),
+  certHojaVida: RequiredFileSchema("El certificado de hoja de vida del conductor es obligatorio"),
+  licenciaAnverso: RequiredFileSchema("La licencia de conducir (anverso) es obligatoria"),
+  licenciaReverso: RequiredFileSchema("La licencia de conducir (reverso) es obligatoria"),
+  carnetAnverso: RequiredFileSchema("La cédula de identidad (anverso) es obligatoria"),
+  carnetReverso: RequiredFileSchema("La cédula de identidad (reverso) es obligatoria"),
+  certAntecedentes: RequiredFileSchema("El certificado de antecedentes es obligatorio"),
 });
 
 // Paso 4: Documentos Vehículo
 export const Step4DocsVehiculoSchema = z.object({
-  padron: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "El padrón del vehículo es obligatorio"
-  ),
-  soap: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "El seguro SOAP es obligatorio"
-  ),
-  permisoCirculacion: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "El permiso de circulación es obligatorio"
-  ),
-  revisionTecnica: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "La revisión técnica es obligatoria"
-  ),
-  certGases: FileAttachmentSchema.nullable().refine(
-    (file) => file !== null,
-    "El certificado de gases / homologación es obligatorio"
-  ),
+  padron: RequiredFileSchema("El padrón del vehículo es obligatorio"),
+  soap: RequiredFileSchema("El seguro SOAP es obligatorio"),
+  permisoCirculacion: RequiredFileSchema("El permiso de circulación es obligatorio"),
+  revisionTecnica: RequiredFileSchema("La revisión técnica es obligatoria"),
+  certGases: RequiredFileSchema("El certificado de gases / homologación es obligatorio"),
   tieneGps: z.enum(["si", "no"], {
     errorMap: () => ({ message: "Indique si el vehículo dispone de GPS" }),
   }),
@@ -130,11 +106,11 @@ export const Step5EmpresaBaseSchema = z.object({
   registraEmpresa: z.enum(["si", "no"], {
     errorMap: () => ({ message: "Indique si registra empresa" }),
   }),
-  estatutoActualizado: FileAttachmentSchema.nullable().optional(),
-  vigenciaActualizada: FileAttachmentSchema.nullable().optional(),
-  eRut: FileAttachmentSchema.nullable().optional(),
-  carpetaTributaria: FileAttachmentSchema.nullable().optional(),
-  comodatoNotarial: FileAttachmentSchema.nullable().optional(),
+  estatutoActualizado: OptionalFileSchema(),
+  vigenciaActualizada: OptionalFileSchema(),
+  eRut: OptionalFileSchema(),
+  carpetaTributaria: OptionalFileSchema(),
+  comodatoNotarial: OptionalFileSchema(),
 });
 
 export const Step5EmpresaSchema = Step5EmpresaBaseSchema.superRefine((data, ctx) => {
