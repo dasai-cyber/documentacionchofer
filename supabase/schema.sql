@@ -53,6 +53,9 @@ CREATE TABLE IF NOT EXISTS public.conductores (
     consentimiento_ley_21719 BOOLEAN NOT NULL DEFAULT TRUE,
     firma_digital TEXT NOT NULL,
     
+    -- Enlace a carpeta de Google Drive (si está habilitado)
+    google_drive_folder TEXT,
+    
     -- Estado de la postulación
     estado TEXT NOT NULL DEFAULT 'pendiente_revision' CHECK (estado IN ('pendiente_revision', 'aprobado', 'rechazado', 'observado')),
     observaciones_admin TEXT

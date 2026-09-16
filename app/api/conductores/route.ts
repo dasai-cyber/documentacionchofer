@@ -4,6 +4,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { uploadDriverDocument } from "@/lib/storage";
 import { getMockConductores, addMockConductor } from "@/lib/mockDb";
 import { sendConductorNotificationEmail } from "@/lib/email";
+import { uploadDriverDossierToGoogleDrive } from "@/lib/googleDrive";
 
 export async function POST(req: NextRequest) {
   try {
@@ -133,35 +134,8 @@ export async function POST(req: NextRequest) {
     let idGenerado = crypto.randomUUID();
     let createdAt = new Date().toISOString();
 
-    if (isSupabaseConfigured && supabase) {
-      const { data: dbData, error: dbError } = await supabase
-        .from("conductores")
-        .insert([registroData])
-        .select("id, created_at")
-        .single();
-
-      if (dbError) {
-        console.error("Error insertando en Supabase:", dbError);
-        throw dbError;
-      }
-
-      if (dbData) {
-        idGenerado = dbData.id;
-        createdAt = dbData.created_at;
-      }
-    } else {
-      // Guardar en mock store para visualización en panel admin local
-      const record = {
-        id: idGenerado,
-        created_at: createdAt,
-        updated_at: createdAt,
-        ...registroData,
-      };
-      addMockConductor(record);
-    }
-
-    // Preparar lista de documentos para el correo electrónico
-    const docsForEmail = [
+    // Preparar lista de documentos
+    const docsForProcessing = [
       { title: "Cédula de Identidad (Anverso)", url: carnetAnversoUrl, base64: data.carnetAnverso?.dataUrl },
       { title: "Cédula de Identidad (Reverso)", url: carnetReversoUrl, base64: data.carnetReverso?.dataUrl },
       { title: "Licencia de Conducir (Anverso)", url: licenciaAnversoUrl, base64: data.licenciaAnverso?.dataUrl },
@@ -180,11 +154,51 @@ export async function POST(req: NextRequest) {
       ...(data.comodatoNotarial ? [{ title: "Comodato Notarial", url: comodatoNotarialUrl!, base64: data.comodatoNotarial.dataUrl }] : []),
     ];
 
-    // Enviar correo de notificación de forma no bloqueante
+    // 1. Subir a Google Drive (si está configurado)
+    let driveFolderUrl: string | null = null;
+    try {
+      driveFolderUrl = await uploadDriverDossierToGoogleDrive({
+        conductorData: registroData,
+        documents: docsForProcessing,
+        id: idGenerado,
+      });
+    } catch (driveErr) {
+      console.error("Error al subir a Google Drive:", driveErr);
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      const { data: dbData, error: dbError } = await supabase
+        .from("conductores")
+        .insert([{ ...registroData, google_drive_folder: driveFolderUrl }])
+        .select("id, created_at")
+        .single();
+
+      if (dbError) {
+        console.error("Error insertando en Supabase:", dbError);
+      }
+
+      if (dbData) {
+        idGenerado = dbData.id;
+        createdAt = dbData.created_at;
+      }
+    } else {
+      // Guardar en mock store para visualización en panel admin local
+      const record = {
+        id: idGenerado,
+        created_at: createdAt,
+        updated_at: createdAt,
+        google_drive_folder: driveFolderUrl,
+        ...registroData,
+      };
+      addMockConductor(record);
+    }
+
+    // 2. Enviar correo de notificación a contacto@dasai.cl
     sendConductorNotificationEmail({
       conductorData: registroData,
-      documents: docsForEmail,
+      documents: docsForProcessing,
       id: idGenerado,
+      driveFolderUrl,
     }).catch((err) => console.error("Error al enviar notificación por correo:", err));
 
     return NextResponse.json(
@@ -193,6 +207,7 @@ export async function POST(req: NextRequest) {
         message: "Ficha de conductor registrada con éxito",
         id: idGenerado,
         createdAt,
+        driveFolderUrl,
         conductor: {
           nombreCompleto: data.nombreCompleto,
           rut: data.rut,

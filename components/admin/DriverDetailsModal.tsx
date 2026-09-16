@@ -183,12 +183,26 @@ export const DriverDetailsModal: React.FC<DriverDetailsModalProps> = ({
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
               <h4 className="font-bold text-slate-900 flex items-center gap-1.5 border-b pb-1.5">
                 <Truck className="w-4 h-4 text-dasai-600" />
-                <span>Equipamiento</span>
+                <span>Equipamiento y Archivos</span>
               </h4>
-              <div className="flex gap-4 text-xs font-medium">
+              <div className="flex flex-wrap gap-3 text-xs font-medium">
                 <span>GPS: <strong>{driver.tiene_gps ? "Sí" : "No"}</strong></span>
+                <span>•</span>
                 <span>Seguro: <strong>{driver.tiene_seguro ? "Sí" : "No"}</strong></span>
               </div>
+              {driver.google_drive_folder && (
+                <div className="pt-2">
+                  <a
+                    href={driver.google_drive_folder}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors border border-blue-200"
+                  >
+                    <span>Abrir en Google Drive</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 

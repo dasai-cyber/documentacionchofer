@@ -30,13 +30,14 @@ interface EmailPayload {
   conductorData: any;
   documents: { title: string; url: string; base64?: string; filename?: string }[];
   id: string;
+  driveFolderUrl?: string | null;
 }
 
 /**
  * Genera el template HTML del correo para el administrador de Dasai
  */
 function generateAdminEmailHtml(payload: EmailPayload): string {
-  const { conductorData, documents, id } = payload;
+  const { conductorData, documents, id, driveFolderUrl } = payload;
 
   const docRows = documents
     .map(
@@ -74,13 +75,27 @@ function generateAdminEmailHtml(payload: EmailPayload): string {
 
       <div style="padding: 32px;">
         
-        <!-- Alerta de recepción -->
+        <!-- Alerta de recepción y Botón Google Drive -->
         <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 14px 16px; border-radius: 8px; margin-bottom: 24px;">
           <p style="margin: 0; color: #166534; font-size: 14px; font-weight: bold;">
             ✓ Se ha recibido una nueva solicitud de registro de conductor.
           </p>
           <p style="margin: 4px 0 0 0; color: #15803d; font-size: 12px;">Folio Único: <strong>${id}</strong></p>
         </div>
+
+        ${
+          driveFolderUrl
+            ? `
+        <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
+          <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: bold;">📁 Carpeta de Google Drive Creada</p>
+          <p style="margin: 0 0 12px 0; font-size: 12px; color: #e0f2fe;">Todos los documentos y el resumen fueron organizados automáticamente en la nube.</p>
+          <a href="${driveFolderUrl}" target="_blank" style="display: inline-block; background-color: #ffffff; color: #0284c7; padding: 10px 20px; border-radius: 8px; font-weight: bold; text-decoration: none; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            Abrir Carpeta en Google Drive ↗
+          </a>
+        </div>
+        `
+            : ""
+        }
 
         <!-- Sección 1: Datos Personales -->
         <h2 style="font-size: 15px; text-transform: uppercase; color: #0284c7; margin: 0 0 12px 0; letter-spacing: 0.5px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px;">
