@@ -3,6 +3,7 @@ import { FormularioConductorSchema } from "@/lib/schema";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { uploadDriverDocument } from "@/lib/storage";
 import { getMockConductores, addMockConductor } from "@/lib/mockDb";
+import { sendConductorNotificationEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -158,6 +159,33 @@ export async function POST(req: NextRequest) {
       };
       addMockConductor(record);
     }
+
+    // Preparar lista de documentos para el correo electrónico
+    const docsForEmail = [
+      { title: "Cédula de Identidad (Anverso)", url: carnetAnversoUrl, base64: data.carnetAnverso?.dataUrl },
+      { title: "Cédula de Identidad (Reverso)", url: carnetReversoUrl, base64: data.carnetReverso?.dataUrl },
+      { title: "Licencia de Conducir (Anverso)", url: licenciaAnversoUrl, base64: data.licenciaAnverso?.dataUrl },
+      { title: "Licencia de Conducir (Reverso)", url: licenciaReversoUrl, base64: data.licenciaReverso?.dataUrl },
+      { title: "Hoja de Vida del Conductor", url: certHojaVidaUrl, base64: data.certHojaVida?.dataUrl },
+      { title: "Certificado de Antecedentes", url: certAntecedentesUrl, base64: data.certAntecedentes?.dataUrl },
+      { title: "Padrón del Vehículo", url: padronUrl, base64: data.padron?.dataUrl },
+      { title: "SOAP (Seguro Obligatorio)", url: soapUrl, base64: data.soap?.dataUrl },
+      { title: "Permiso de Circulación", url: permisoCirculacionUrl, base64: data.permisoCirculacion?.dataUrl },
+      { title: "Revisión Técnica", url: revisionTecnicaUrl, base64: data.revisionTecnica?.dataUrl },
+      { title: "Certificado de Gases", url: certGasesUrl, base64: data.certGases?.dataUrl },
+      ...(data.estatutoActualizado ? [{ title: "Estatuto Social", url: estatutoActualizadoUrl!, base64: data.estatutoActualizado.dataUrl }] : []),
+      ...(data.vigenciaActualizada ? [{ title: "Certificado de Vigencia", url: vigenciaActualizadaUrl!, base64: data.vigenciaActualizada.dataUrl }] : []),
+      ...(data.eRut ? [{ title: "E-RUT Empresa", url: eRutUrl!, base64: data.eRut.dataUrl }] : []),
+      ...(data.carpetaTributaria ? [{ title: "Carpeta Tributaria", url: carpetaTributariaUrl!, base64: data.carpetaTributaria.dataUrl }] : []),
+      ...(data.comodatoNotarial ? [{ title: "Comodato Notarial", url: comodatoNotarialUrl!, base64: data.comodatoNotarial.dataUrl }] : []),
+    ];
+
+    // Enviar correo de notificación de forma no bloqueante
+    sendConductorNotificationEmail({
+      conductorData: registroData,
+      documents: docsForEmail,
+      id: idGenerado,
+    }).catch((err) => console.error("Error al enviar notificación por correo:", err));
 
     return NextResponse.json(
       {
